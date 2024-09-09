@@ -5,6 +5,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 using System.Text.Encodings.Web;
+using Bulky.DataAcces.Repository.IRepository;
 using Bulky.Model;
 using Bulky.Utility;
 using Microsoft.AspNetCore.Authentication;
@@ -26,14 +27,18 @@ namespace BulkyWeb.Areas.Identity.Pages.Account
         private readonly IUserEmailStore<IdentityUser> _emailStore;
         private readonly ILogger<RegisterModel> _logger;
         private readonly IEmailSender _emailSender;
-
+        private readonly IUnitOfWork _unitOFWork;
+        
         public RegisterModel(
             UserManager<IdentityUser> userManager,
             RoleManager<IdentityRole> roleManager,
             IUserStore<IdentityUser> userStore,
             SignInManager<IdentityUser> signInManager,
             ILogger<RegisterModel> logger,
-            IEmailSender emailSender)
+            IEmailSender emailSender,
+            IUnitOfWork unitOfWork
+            )
+
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -42,6 +47,7 @@ namespace BulkyWeb.Areas.Identity.Pages.Account
             _signInManager = signInManager;
             _logger = logger;
             _emailSender = emailSender;
+            _unitOFWork = unitOfWork;
         }
 
         /// <summary>
@@ -97,8 +103,21 @@ namespace BulkyWeb.Areas.Identity.Pages.Account
             [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
             public string ConfirmPassword { get; set; }
             public string? Role { get;set; }
+
+            [Required]
+            public string Name { get; set; }
+            public string? StreetAddress { get; set; }
+            public string? City { get; set; }
+            public string? State { get; set; }
+            public string? PostalCode { get; set; }
+            public string? PhoneNumber { get; set; }
+            public int? CompanyId { get; set; }
+ 
             [ValidateNever]
             public IEnumerable<SelectListItem> RoleList { get; set; }
+
+            [ValidateNever]
+            public IEnumerable<SelectListItem> CompanyList { get; set; }
         }
 
 
@@ -113,11 +132,18 @@ namespace BulkyWeb.Areas.Identity.Pages.Account
             }
             Input = new()
             {
-                RoleList=_roleManager.Roles.Select(x=>x.Name).Select(i=>new SelectListItem
+                RoleList = _roleManager.Roles.Select(x => x.Name).Select(i => new SelectListItem
                 {
-                    Text=i,
-                    Value=i
+                    Text = i,
+                    Value = i
+                }),
+
+                CompanyList = _unitOFWork.Company.GetAll().Select(i => new SelectListItem
+                {
+                    Text = i.Name,
+                    Value = i.Id.ToString()
                 })
+
             };
             ReturnUrl = returnUrl;
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
@@ -133,6 +159,18 @@ namespace BulkyWeb.Areas.Identity.Pages.Account
 
                 await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
                 await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+                user.City=Input.City;
+                user.StreetAddress=Input.StreetAddress;
+                user.PostCode = Input.PostalCode;
+                user.PhoneNumber=Input.PhoneNumber;
+                user.State=Input.State;
+                user.Name = Input.Name;
+                if(Input.Role==SD.Role_Company) {
+                    user.CompanyId = Input.CompanyId;
+                }
+
+
+
                 var result = await _userManager.CreateAsync(user, Input.Password);
 
                 if (result.Succeeded)

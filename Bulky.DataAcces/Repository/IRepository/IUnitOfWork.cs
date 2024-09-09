@@ -10,6 +10,12 @@ namespace Bulky.DataAcces.Repository.IRepository
 	{
 		ICategoryRepository Category { get; }
 		IProductRepository Product { get; }
-		void Save();
+        ICompanyRepository Company { get; }
+        IApplicationUserRepository ApplicationUser{ get; }
+		IShoppingCartRepository ShoppingCart { get; }
+		IOrderDetailsRepository OrderDetails { get; }
+		IOrderHeaderRepository OrderHeeaader { get; }
+        IProductImageRepository ProductImage { get; }
+        void Save();
 	}
 }
